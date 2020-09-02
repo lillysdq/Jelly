@@ -38,26 +38,29 @@ final class PresentationController: UIPresentationController, PresentationContro
     override func presentationTransitionWillBegin() {
         let backgroundStyle = presentation.presentationUIConfiguration.backgroundStyle
         switch backgroundStyle {
-            case .blurred(let effectStyle):
-                self.setupBlurView()
-                animateBlurView(effectStyle: effectStyle)
-            case .dimmed(let alpha):
-                self.setupDimmingView(withAlpha: alpha)
-                animateDimmingView(alpha: alpha)
+        case .blurred(let effectStyle):
+            self.setupBlurView()
+            animateBlurView(effectStyle: effectStyle)
+        case .dimmed(let alpha):
+            self.setupDimmingView(withAlpha: alpha)
+            animateDimmingView(alpha: alpha)
+        case .color(let color):
+            self.setupDimmingView(withColor: color)
+            animateDimmingView(alpha: 1)
         }
     }
     
     override func dismissalTransitionWillBegin() {
         let backgroundStyle = presentation.presentationUIConfiguration.backgroundStyle
         switch backgroundStyle {
-            case .blurred:
-                animateBlurView(effectStyle: nil)
-            case .dimmed:
-                animateDimmingView(alpha: 0.0)
+        case .blurred:
+            animateBlurView(effectStyle: nil)
+        case .dimmed, .color:
+            animateDimmingView(alpha: 0.0)
         }
     }
     
-    override func containerViewWillLayoutSubviews() {        
+    override func containerViewWillLayoutSubviews() {
         presentedView?.frame = frameOfPresentedViewInContainerView
         let corners = presentation.presentationUIConfiguration.corners
         let radius = presentation.presentationUIConfiguration.cornerRadius
@@ -113,6 +116,8 @@ extension PresentationController {
             blurView.effect = UIBlurEffect(style: style)
         case .dimmed(let alpha):
             dimmingView.alpha = alpha
+        case .color:
+            dimmingView.alpha = 1
         }
     }
 }
@@ -154,6 +159,27 @@ extension PresentationController {
         dimmingView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor).isActive = true
 
     }
+    
+    private func setupDimmingView(withColor color: UIColor = UIColor.black.withAlphaComponent(0.5)) {
+        guard let containerView = containerView else {
+            return
+        }
+        
+        dimmingView.translatesAutoresizingMaskIntoConstraints = false
+        dimmingView.alpha = 0.0
+        dimmingView.backgroundColor = color
+        
+        let recognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap(recognizer:)))
+        dimmingView.addGestureRecognizer(recognizer)
+        containerView.insertSubview(dimmingView, at: 0)
+        
+        dimmingView.leftAnchor.constraint(equalTo: containerView.leftAnchor).isActive = true
+        dimmingView.rightAnchor.constraint(equalTo: containerView.rightAnchor).isActive = true
+        dimmingView.topAnchor.constraint(equalTo: containerView.topAnchor).isActive = true
+        dimmingView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor).isActive = true
+
+    }
+    
 }
 
 extension PresentationController: UIGestureRecognizerDelegate {
